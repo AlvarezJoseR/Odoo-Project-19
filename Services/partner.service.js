@@ -61,7 +61,14 @@ exports.create = async (partnerInfo) => {
         }
 
         //Crear cuenta bancaria si se proporciona
+        if (partnerInfo.hasOwnProperty('bank_account')) {
+            for (const bank_account of partnerInfo.bank_account) {
+                bank_account.partner_id = response.data;
 
+                await bankAccountService.createBankAccount(credentials, bank_account);
+
+            }
+        }
         //Crear el partner
         const createResponse = await odooService.query('res.partner', 'create', { vals_list: [partnerData] });
         if (createResponse.error) return { statusCode: 500, message: createResponse.message, data: createResponse };
