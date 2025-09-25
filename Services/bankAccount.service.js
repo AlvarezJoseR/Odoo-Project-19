@@ -60,7 +60,6 @@ exports.create = async (bankAccountInfo) => {
             if (bank.statusCode !== 200) return bank;
         } else {
             //Buscar banco por nombre o crear nuevo
-             console.log(bankAccountInfo.bank_name, 'bankAccountInfo1');
             const bank = await bankService.getBankByFilters({ name: bankAccountInfo.bank_name });
             if (bank.data && bank.data.length === 1) {
                 bank_account_data.bank_id = bank.data[0].id;
@@ -68,7 +67,6 @@ exports.create = async (bankAccountInfo) => {
                 //create new bank and use id
                 const new_bank_id = await bankService.create({ "name": bankAccountInfo.bank_name });
                 if (new_bank_id.statusCode != 200) console.error(new_bank_id.data);
-                console.log(new_bank_id, 'new_bank_id');
                 bank_account_data.bank_id = new_bank_id.data[0];
             }
         }

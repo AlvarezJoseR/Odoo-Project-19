@@ -18,9 +18,7 @@ exports.getById = async (id) => {
 
 exports.create = async (bankInfo) => {
     try {
-        console.log(bankInfo, 'bankInfo');
         const newBank = await odooService.query('res.bank', 'create', { vals_list: [bankInfo] });
-        console.log(newBank, 'newBank');
         if (newBank.error) return { statusCode: 500, message: newBank.message, data: newBank };
         if (!newBank.success) return { statusCode: 400, message: newBank.message, data: newBank.data?.data?.message };
         return { statusCode: 200, message: 'Bank creado con éxito', data: newBank.data };
@@ -32,7 +30,6 @@ exports.create = async (bankInfo) => {
 
 exports.getBankByFilters = async (filters) => {
     try {
-        console.log(filters)
         fetch_filters = [];
         if (filters) {
             for (const [key, value] of Object.entries(filters)) {

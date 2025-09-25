@@ -35,19 +35,13 @@ exports.query = async (
                 data.error?.message ||
                 data.error?.data?.debug ||
                 'Error en la consulta a Odoo';
-
-            const error = new Error(Msg);
-            error.status = 502;
-
-
-
-            return { success: false, message: "Error en la consulta de Odoo", data: data.error };
+            return { success: false, message: "Error en la consulta de Odoo", data: Msg };
         }
 
         return { success: true, message: "Consulta realizada con exito", data: data };
 
     } catch (error) {
         console.error('Error en la consulta a Odoo:', error);
-        return { success: false, error: true, data: error.message, message: 'Error en la consulta a Odoo' };
+        return { success: false, error: true, data: error.response.data.message, message: 'Error en la consulta a Odoo' };
     }
 };

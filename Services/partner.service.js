@@ -1,5 +1,5 @@
 const odooService = require('../Odoo/odoo.connection');
-
+const companyService = require('./company.service');
 // Importar el esquema de validación
 const { createPartnerSchema } = require('../Schemas/Partner/partner.schema');
 // Métodos del service de partner
@@ -52,6 +52,10 @@ exports.create = async (partnerInfo) => {
     try {
         const partnerFields = createPartnerSchema.describe().keys;
         const partnerData = {};
+
+        //Verificar si la compañía ya existe
+        const company = await companyService.getById(partnerInfo.company_id);
+        if (company.statusCode !== 200) return company;
 
         //Extraer solo los campos de partner permitidos
         for (const [key, value] of Object.entries(partnerInfo)) {
