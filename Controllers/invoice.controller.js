@@ -46,3 +46,14 @@ exports.deleteProduct = async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
+
+exports.confirmInvoice = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await invoiceService.confirmInvoice(id);
+        res.status(result.statusCode).json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};

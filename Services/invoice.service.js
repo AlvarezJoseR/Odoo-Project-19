@@ -105,3 +105,25 @@ exports.deleteProduct = async (id, products) => {
         return { statusCode: 500, message: "Error interno", data: e.message };
     }
 };
+
+exports.confirmInvoice = async (id) => {
+    try {
+        //Validar el id
+        const invoiceId = Number(id);
+        if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
+        //Verificar que el invoice exista
+        const invoice = await this.getById(invoiceId);
+        if (invoice.statusCode !== 200) return invoice;
+        //Confirmar el invoice
+        const confirm = await odooService.query('account.move', 'action_post', { ids: [invoiceId] });
+        if (confirm.error) return { statusCode: 500, message: confirm.message, data: confirm.data };
+        if (!confirm.success) return { statusCode: 400, message: confirm.message, data: confirm.data?.data?.message };
+        //Regresar la información del invoice confirmado
+        const response = await this.getById(invoiceId);
+        if (response.statusCode !== 200) return response;
+        return { statusCode: 200, message: 'Invoice confirmado con éxito', data: response.data };
+    } catch (e) {
+        console.error(e);
+        return { statusCode: 500, message: "Error interno", data: e.message };
+    }
+};

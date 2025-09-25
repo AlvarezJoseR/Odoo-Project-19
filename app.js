@@ -16,7 +16,6 @@ const bankRoutes = require('./Routes/bank.routes');
 //app config
 const port = process.env.PORT;
 
-
 //Routes
 app.use('/util', utilRoutes);
 app.use('/partner', partnerRoutes);

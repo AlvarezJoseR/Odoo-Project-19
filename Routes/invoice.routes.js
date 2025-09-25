@@ -12,4 +12,5 @@ router.get('/:id', invoiceController.getById);
 router.post('/', validateBody(createInvoicesSchema), invoiceController.create);
 router.put('/addproduct/:id', validateBody(addProductSchema), invoiceController.addProduct);
 router.delete('/deleteproduct/:id', validateBody(deleteProductsInvoiceSchema), invoiceController.deleteProduct);
+router.post('/confirm/:id', invoiceController.confirmInvoice);
 module.exports = router;

@@ -29,6 +29,7 @@ exports.query = async (
             }
         );
 
+
         if (data && data.error) {
             const Msg =
                 data.error?.data?.message ||
