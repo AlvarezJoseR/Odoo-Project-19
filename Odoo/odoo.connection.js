@@ -19,6 +19,7 @@ exports.query = async (
     args = []) => {
     try {
         const params = { service, method, args: [DB, UID, API_KEY, ...args] };
+        console.log(params);
         const { data } = await axios.post(URL, {
             jsonrpc: "2.0",
             method: "call",
