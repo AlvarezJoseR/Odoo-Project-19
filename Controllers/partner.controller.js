@@ -1,51 +1,56 @@
 const partnerService = require('../Services/partner.service');
 
 // Métodos del controller de partner
-exports.getByFilters = (req, res) => {
-	try {
-        // Lógica para obtener partners por filtros
-        res.status(501).json({ message: 'No implementado: getByFilters' });
-    } catch (e) {       
+exports.getByFilters = async (req, res) => {
+    try {
+        const filters = req.query;
+        const response = await partnerService.getByFilters(filters);
+        res.status(response.statusCode).json(response);
+    } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
 
 exports.getById = async (req, res) => {
-	try {
+    try {
         const { id } = req.params;
         const response = await partnerService.getById(id);
         res.status(response.statusCode).json(response);
     } catch (e) {
         console.error(e);
-        res.status(500).json({ statusCode: 500,message: 'Error interno del servidor', data: e.message });
+        res.status(500).json({ statusCode: 500, message: 'Error interno del servidor', data: e.message });
     }
 };
 
-exports.create = (req, res) => {
-	try {
-        // Lógica para crear un partner
-        res.status(501).json({ message: 'No implementado: create' });
+exports.create = async (req, res) => {
+    try {
+        const partnerInfo = req.body;
+        const response = await partnerService.create(partnerInfo);
+        res.status(response.statusCode).json(response);
     } catch (e) {
         console.error(e);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        res.status(500).json({ statusCode: 500, message: 'Error interno del servidor', data: e.message });// Modificado para incluir el mensaje de error
     }
 };
 
-exports.update = (req, res) => {
-	try {
-        // Lógica para actualizar un partner
-        res.status(501).json({ message: 'No implementado: update' });
+exports.update = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const partnerInfo = req.body;
+        const response = await partnerService.update(id, partnerInfo);
+        res.status(response.statusCode).json(response);
     } catch (e) {
         console.error(e);
-        res.status(500).json({ message: 'Error interno del servidor' });
+        res.status(500).json({ statusCode: 500, message: 'Error interno del servidor', data: e.message });
     }
 };
 
-exports.delete = (req, res) => {
-	try {
-        // Lógica para eliminar un partner
-        res.status(501).json({ message: 'No implementado: delete' });
+exports.delete = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const response = await partnerService.delete(id);
+        res.status(response.statusCode).json(response);
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Error interno del servidor' });

@@ -1,4 +1,4 @@
-const URL = process.env.ODOO_URL;
+const ODOO_URL = process.env.ODOO_URL;
 const UID = process.env.ODOO_UID;
 const DB = process.env.ODOO_DB;
 const API_KEY = process.env.ODOO_API_KEY;
@@ -14,23 +14,20 @@ const axios = require('axios');
  * @returns {Promise<{success: boolean, data: any, message?: string, error?: boolean}>} Objeto con el resultado de la petición.
  */
 exports.query = async (
-    service = 'object',
+    model = 'object',
     method = 'execute_kw',
-    args = []) => {
+    args = {}) => {
     try {
-        const params = { service, method, args: [DB, UID, API_KEY, ...args] };
-        console.log(params);
-        const { data } = await axios.post(URL, {
-            jsonrpc: "2.0",
-            method: "call",
-            params: params,
-            id: new Date().getTime()
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
+        const URL = `${ODOO_URL}/${model}/${method}`;
+        const { data } = await axios.post(URL,
+            args,
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${API_KEY}`
+                }
             }
-        });
-
+        );
 
         if (data && data.error) {
             const Msg =
@@ -44,10 +41,10 @@ exports.query = async (
 
 
 
-            return { success: false, message: "Error en la consulta de Odoo",  data: data.error };
+            return { success: false, message: "Error en la consulta de Odoo", data: data.error };
         }
 
-        return { success: true, message: "Consulta realizada con exito", data: data.result };
+        return { success: true, message: "Consulta realizada con exito", data: data };
 
     } catch (error) {
         console.error('Error en la consulta a Odoo:', error);

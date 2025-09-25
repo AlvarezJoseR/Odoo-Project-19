@@ -3,6 +3,6 @@ const router = express.Router();
 const attachmentController = require('../Controllers/attachment.controller');
 
 
-router.get('/getById/:id', attachmentController.getById);
+router.get('/:id', attachmentController.getById);
 
 module.exports = router;

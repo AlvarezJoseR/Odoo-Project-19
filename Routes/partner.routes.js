@@ -4,10 +4,14 @@ const router = express.Router();
 //Controller
 const partnerController = require('./../Controllers/partner.controller');
 
+//Middlewares
+const validateBody = require('./../Middleware/ValidateBody.middleware');
+const { createPartnerSchema, updatePartnerSchema } = require('../Schemas/Partner/partner.schema');
+
 router.get('/', partnerController.getByFilters);
 router.get('/:id', partnerController.getById);
-router.post('/create', partnerController.create);
-router.put('/update/:id', partnerController.update);
-router.delete('/delete/:id', partnerController.delete);
+router.post('/', validateBody(createPartnerSchema), partnerController.create);
+router.put('/:id', validateBody(updatePartnerSchema), partnerController.update);
+router.delete('/:id', partnerController.delete);
 
 module.exports = router;
