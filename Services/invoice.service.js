@@ -212,7 +212,7 @@ exports.payInvoice = async (id, data) => {
         const residual = invoice.data.amount_residual;
         const paymentAmount = data.amount;
         if (paymentAmount > residual) {
-            data.amount = residual; 
+            data.amount = residual;
         }
         //Crear el wizard con contexto
         const wizardCreate = await odooService.query(
@@ -232,18 +232,48 @@ exports.payInvoice = async (id, data) => {
 
         const wizardId = wizardCreate.data[0];
 
-        // 3️⃣ Confirmar el pago
+        // Confirmar el pago
         const payment = await odooService.query(
             'account.payment.register',
             'action_create_payments',
             { ids: [wizardId] }
         );
-        // 4️⃣ Regresar la información actualizada de la factura
+        // Regresar la información actualizada de la factura
         const updatedInvoice = await this.getById(invoiceId);
         if (updatedInvoice.statusCode !== 200) return updatedInvoice;
 
         return { statusCode: 200, message: 'Invoice pagado con éxito', data: updatedInvoice.data };
 
+    } catch (e) {
+        console.error(e);
+        return { statusCode: 500, message: "Error interno", data: e.message };
+    }
+};
+
+
+exports.createCreditNote = async (id, creditNoteInfo) => {
+    try {
+        // Validar el id
+        const invoiceId = Number(id);
+        if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
+
+        // Verificar que la factura exista
+        const invoice = await this.getById(invoiceId);
+        if (invoice.statusCode !== 200) return invoice;
+        //Crear la peticion de la nota de crédito
+        const creditnote = await odooService.query('account.move.reversal', 'create', {
+            vals_list: [{
+                move_ids: [invoiceId],
+                reason: creditNoteInfo.reason || 'Devolución',
+                journal_id: creditNoteInfo.journal_id || 3,
+                date: creditNoteInfo.date || new Date().toISOString().split('T')[0]
+            }]
+        });
+        if (creditnote.error) return { statusCode: creditnote.status, message: creditnote.message, data: creditnote.data };
+        if (!creditnote.success) return { statusCode: 400, message: creditnote.message, data: creditnote.data?.data?.message };
+
+        const confirm = await odooService.query('account.move.reversal', 'reverse_moves', { ids: [creditnote.data[0]] });
+        return { statusCode: 200, message: 'Nota de crédito creada con éxito', data: creditnote.data };
     } catch (e) {
         console.error(e);
         return { statusCode: 500, message: "Error interno", data: e.message };

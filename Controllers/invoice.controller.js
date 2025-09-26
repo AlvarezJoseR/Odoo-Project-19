@@ -80,3 +80,27 @@ exports.payInvoice = async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
+
+exports.createCreditNote = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const data = req.body;
+        const result = await invoiceService.createCreditNote(id, data);
+        res.status(result.statusCode).json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+
+exports.createDebitNote = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const data = req.body;
+        const result = await invoiceService.createDebitNote(id, data);
+        res.status(result.statusCode).json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
