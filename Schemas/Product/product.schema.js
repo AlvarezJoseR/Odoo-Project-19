@@ -6,6 +6,8 @@ const createProductSchema = Joi.object({
     sale_ok: Joi.boolean().optional(),
     purchase_ok: Joi.boolean().optional(),
     standard_price: Joi.number().positive(),
+    type: Joi.string().valid('consu', 'service', 'combo').optional().default('consu'),
+    invoice_policy: Joi.string().valid('order', 'delivery').optional().default('order'),
 });
 
 
@@ -16,6 +18,8 @@ const updateProductSchema = Joi.object({
     sale_ok: Joi.boolean().optional(),
     purchase_ok: Joi.boolean().optional(),
     standard_price: Joi.number().positive().optional(),
+    type: Joi.string().valid('consu', 'service', 'combo').optional().default('consu'),
+    invoice_policy: Joi.string().valid('order', 'delivery').optional().default('order'),
 });
 
 module.exports = {

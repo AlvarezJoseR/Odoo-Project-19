@@ -20,7 +20,10 @@ const partnerFields = [
     "customer_rank",
     "supplier_rank",
     "l10n_latam_identification_type_id",
-    "vat"
+    "vat",
+    "child_ids",
+    "type",
+    "comment"
 ];
 
 /**
@@ -86,13 +89,12 @@ exports.create = async (partnerInfo) => {
         const partnerFields = createPartnerSchema.describe().keys;
         const partnerData = {};
 
-        console.log(partnerInfo);
         //Verificar la identificación
         if (partnerInfo.hasOwnProperty('identificacion_type')) {
             partnerInfo.l10n_latam_identification_type_id = partnerInfo.identificacion_type;
             delete partnerInfo.identificacion_type;
         }
-        console.log(partnerInfo);
+
         //Verificar si la compañía ya existe
         const company = await companyService.getById(partnerInfo.company_id);
         if (company.statusCode !== 200) return company;
@@ -106,7 +108,6 @@ exports.create = async (partnerInfo) => {
 
 
         //Crear el partner
-        console.log('Creando partner:', partnerData);
         const createResponse = await odooService.query('res.partner', 'create', { vals_list: [partnerData] });
         if (createResponse.error) return { statusCode: createResponse.status, message: createResponse.message, data: createResponse.data };
         if (!createResponse.success) return { statusCode: 400, message: createResponse.message, data: createResponse.data?.data?.message };
@@ -172,6 +173,27 @@ exports.delete = async (id) => {
         if (!response.success) return { statusCode: 400, message: response.message, data: response.data.data.message };
 
         return { statusCode: 200, message: 'Partner eliminado con éxito', data: [] };
+    } catch (e) {
+        console.error(e);
+        return { statusCode: 500, message: "Error interno", data: e.message };
+    }
+};
+
+exports.addContact = async (id, contactInfo) => {
+    try {
+        //validar que el id sea un número
+        const partnerId = Number(id);
+        if (isNaN(partnerId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] }; 
+        //Validar que el partner exista
+        const partnerExists = await this.getById(partnerId);
+        if (partnerExists.statusCode !== 200) return partnerExists;
+        //Crear el contacto
+        contactInfo.parent_id = partnerId;
+        contactInfo.is_company = false;
+
+        const createResponse = await this.create(contactInfo);
+        if (createResponse.statusCode !== 200) return createResponse;
+        return { statusCode: 200, message: 'Contacto creado con éxito', data: createResponse.data };
     } catch (e) {
         console.error(e);
         return { statusCode: 500, message: "Error interno", data: e.message };

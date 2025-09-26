@@ -1,3 +1,4 @@
+const e = require('express');
 const partnerService = require('../Services/partner.service');
 
 // Métodos del controller de partner
@@ -54,6 +55,18 @@ exports.delete = async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+
+exports.addContact = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const contactInfo = req.body;
+        const response = await partnerService.addContact(id, contactInfo);
+        res.status(response.statusCode).json(response);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ statusCode: 500, message: 'Error interno del servidor', data: e.message });
     }
 };
 

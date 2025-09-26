@@ -13,5 +13,6 @@ router.get('/:id', partnerController.getById);
 router.post('/', validateBody(createPartnerSchema), partnerController.create);
 router.put('/:id', validateBody(updatePartnerSchema), partnerController.update);
 router.delete('/:id', partnerController.delete);
+router.post('/contact/:id', partnerController.addContact);
 
 module.exports = router;

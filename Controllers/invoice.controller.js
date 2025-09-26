@@ -57,3 +57,26 @@ exports.confirmInvoice = async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
+
+exports.draftInvoice = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await invoiceService.draftInvoice(id);
+        res.status(result.statusCode).json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+
+exports.payInvoice = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const data = req.body;
+        const result = await invoiceService.payInvoice(id, data);
+        res.status(result.statusCode).json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};

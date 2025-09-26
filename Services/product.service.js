@@ -1,6 +1,16 @@
 const e = require('express');
 const odooService = require('../Odoo/odoo.connection');
 
+const productFields = [
+  "name",
+  "list_price",
+  "standard_price",
+  "purchase_ok",
+  "sale_ok",
+  "type",
+  "invoice_policy"
+]
+
 /**
  * Obtiene un producto por su ID.
  * @param {number|string} id - ID del producto a buscar.
@@ -18,7 +28,7 @@ exports.getById = async (id) => {
         if (isNaN(productId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
 
         // Obtenemos el producto
-        const product = await odooService.query('product.template', 'search_read', { domain: [['id', '=', productId]], fields: ['id', 'name', 'default_code', 'list_price'] });
+        const product = await odooService.query('product.template', 'search_read', { domain: [['id', '=', productId]], fields: productFields });
         if (product.error) return { statusCode: product.status, message: product.message, data: product.data };
         if (!product.success) return { statusCode: 400, message: product.message, data: product.data?.data?.message };
         if (!product.data || product.data.length === 0) return { statusCode: 404, message: `No se encontró ningún producto con id ${productId}`, data: [] };
@@ -77,7 +87,7 @@ exports.getByFilters = async (filters) => {
             fetch_filters.push([key, 'ilike', value]);
         }
         //Obtener los productos
-        const response = await odooService.query('product.template', 'search_read', { domain: fetch_filters, fields: ['id', 'name', 'default_code', 'list_price'] });
+        const response = await odooService.query('product.template', 'search_read', { domain: fetch_filters, fields: productFields });
         if (response.error) return { statusCode: response.status, message: response.message, data: response.data };
         if (!response.success) return { statusCode: 400, message: response.message, data: response.data?.data?.message };
         return { statusCode: 200, message: 'Productos obtenidos con éxito', data: response.data };

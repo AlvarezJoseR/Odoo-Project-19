@@ -13,4 +13,6 @@ router.post('/', validateBody(createInvoicesSchema), invoiceController.create);
 router.put('/addproduct/:id', validateBody(addProductSchema), invoiceController.addProduct);
 router.delete('/deleteproduct/:id', validateBody(deleteProductsInvoiceSchema), invoiceController.deleteProduct);
 router.post('/confirm/:id', invoiceController.confirmInvoice);
+router.post('/draft/:id', invoiceController.draftInvoice);
+router.post('/pay/:id', invoiceController.payInvoice);
 module.exports = router;

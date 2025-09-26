@@ -17,7 +17,13 @@ const createPartnerSchema = Joi.object({
   vat: Joi.string().optional().allow(''),
   website: Joi.string().uri().optional().allow(''),
   bank_account: Joi.array().items().optional(),
-  l10n_latam_identification_type_id: Joi.number().optional()  
+  l10n_latam_identification_type_id: Joi.number().optional(),
+  type: Joi.string().valid('contact', 'invoice', 'delivery', 'other').optional().default('invoice'),
+  parent_id: Joi.number().optional(),
+  comment: Joi.string().optional().allow(''),
+  email: Joi.string().email().optional().allow(''),
+  function: Joi.string().optional().allow(''),
+  user_id: Joi.number().optional(),
 })
 
 
@@ -44,6 +50,12 @@ const updatePartnerSchema = Joi.object({
   website: Joi.string().uri().optional().allow(''),
 
   lang: Joi.string().optional(),
+  user_id: Joi.number().optional(),
+  property_payment_term_id: Joi.number().integer().optional(),
+  property_inbound_payment_method_line_id: Joi.number().integer().optional(),
+  property_supplier_payment_term_id: Joi.number().integer().optional(),
+  property_outbound_payment_method_line_id: Joi.number().integer().optional(),
+  comment: Joi.string().optional().allow(''),
 });
 
 module.exports = {

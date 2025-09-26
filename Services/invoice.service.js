@@ -16,7 +16,7 @@ exports.getById = async (id) => {
         const invoiceId = Number(id);
         if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
 
-        const invoice = await odooService.query('account.move', 'search_read', { domain: [['id', '=', invoiceId]], fields: ['id', 'name', 'move_type', 'partner_id', 'amount_total', 'line_ids'] });
+        const invoice = await odooService.query('account.move', 'search_read', { domain: [['id', '=', invoiceId]], fields: ['id', 'name', 'move_type', 'partner_id', 'amount_total', 'line_ids', 'currency_id', 'company_id', 'amount_residual'] });
 
         if (invoice.error) return { statusCode: invoice.status, message: invoice.message, data: invoice.data };
         if (!invoice.success) return { statusCode: 400, message: invoice.message, data: invoice.data?.data?.message };
@@ -127,11 +127,11 @@ exports.deleteProduct = async (id, products) => {
         //Validar el id
         const invoiceId = Number(id);
         if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
-        
+
         //Verificar que el invoice exista
         const invoice = await this.getById(invoiceId);
         if (invoice.statusCode !== 200) return invoice;
-        
+
         //Eliminar los productos
         for (const productId of products.products) {
 
@@ -139,7 +139,7 @@ exports.deleteProduct = async (id, products) => {
             if (product.error) return { statusCode: product.status, message: product.message, data: product.data };
             if (!product.success) return { statusCode: 400, message: product.message, data: product.data?.data?.message };
         }
-        
+
         //Regresar la información del invoice actualizado
         const response = await this.getById(invoiceId);
         if (response.statusCode !== 200) return response;
@@ -155,16 +155,16 @@ exports.confirmInvoice = async (id) => {
         //Validar el id
         const invoiceId = Number(id);
         if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
-        
+
         //Verificar que el invoice exista
         const invoice = await this.getById(invoiceId);
         if (invoice.statusCode !== 200) return invoice;
-        
+
         //Confirmar el invoice
         const confirm = await odooService.query('account.move', 'action_post', { ids: [invoiceId] });
         if (confirm.error) return { statusCode: confirm.status, message: confirm.message, data: confirm.data };
         if (!confirm.success) return { statusCode: 400, message: confirm.message, data: confirm.data?.data?.message };
-        
+
         //Regresar la información del invoice confirmado
         const response = await this.getById(invoiceId);
         if (response.statusCode !== 200) return response;
@@ -174,3 +174,79 @@ exports.confirmInvoice = async (id) => {
         return { statusCode: 500, message: "Error interno", data: e.message };
     }
 };
+
+exports.draftInvoice = async (id) => {
+    try {
+        //Validar el id
+        const invoiceId = Number(id);
+        if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
+
+        //Verificar que el invoice exista
+        const invoice = await this.getById(invoiceId);
+        if (invoice.statusCode !== 200) return invoice;
+
+        //Cambiar el estado a borrador
+        const draft = await odooService.query('account.move', 'button_draft', { ids: [invoiceId] });
+        if (draft.error) return { statusCode: draft.status, message: draft.message, data: draft.data };
+        if (!draft.success) return { statusCode: 400, message: draft.message, data: draft.data?.data?.message };
+
+        //Regresar la información del invoice en estado borrador
+        const response = await this.getById(invoiceId);
+        if (response.statusCode !== 200) return response;
+        return { statusCode: 200, message: 'Invoice cambiado a borrador con éxito', data: response.data };
+    } catch (e) {
+        console.error(e);
+        return { statusCode: 500, message: "Error interno", data: e.message };
+    }
+};
+
+exports.payInvoice = async (id, data) => {
+    try {
+        // Validar el id
+        const invoiceId = Number(id);
+        if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
+
+        // Verificar que la factura exista
+        const invoice = await this.getById(invoiceId);
+        if (invoice.statusCode !== 200) return invoice;
+        const residual = invoice.data.amount_residual;
+        const paymentAmount = data.amount;
+        if (paymentAmount > residual) {
+            data.amount = residual; 
+        }
+        //Crear el wizard con contexto
+        const wizardCreate = await odooService.query(
+            'account.payment.register',
+            'create',
+            {
+                vals_list: data,
+                context: {
+                    active_model: 'account.move',
+                    active_ids: [invoiceId]
+                }
+            }
+        );
+
+        if (!wizardCreate.success)
+            return { statusCode: 400, message: wizardCreate.message, data: wizardCreate.data };
+
+        const wizardId = wizardCreate.data[0];
+
+        // 3️⃣ Confirmar el pago
+        const payment = await odooService.query(
+            'account.payment.register',
+            'action_create_payments',
+            { ids: [wizardId] }
+        );
+        // 4️⃣ Regresar la información actualizada de la factura
+        const updatedInvoice = await this.getById(invoiceId);
+        if (updatedInvoice.statusCode !== 200) return updatedInvoice;
+
+        return { statusCode: 200, message: 'Invoice pagado con éxito', data: updatedInvoice.data };
+
+    } catch (e) {
+        console.error(e);
+        return { statusCode: 500, message: "Error interno", data: e.message };
+    }
+};
+
