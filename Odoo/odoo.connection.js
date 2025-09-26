@@ -43,6 +43,6 @@ exports.query = async (
 
     } catch (error) {
         console.error('Error en la consulta a Odoo:', error);
-        return { success: false, error: true, data: error.response.data.message, message: 'Error en la consulta a Odoo' };
+        return { success: false, error: true, data: error.response.data.message, message: 'Error en la consulta a Odoo', status: error.response.status };
     }
 };

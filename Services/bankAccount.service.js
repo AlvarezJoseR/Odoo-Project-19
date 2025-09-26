@@ -1,14 +1,19 @@
 const odooService = require('../Odoo/odoo.connection');
 const partnerService = require('./partner.service');
 const bankService = require('./bank.service');
+/**
+ * Obtiene una cuenta bancaria específica de Odoo por su ID. Busca un registro en el modelo 'res.partner.bank' usando el ID proporcionado. Si la cuenta existe, retorna su información básica (id, acc_number, bank_name, partner_id, bank_id).
+ * @param {number|string} id - ID de la cuenta bancaria a buscar.
+ * @returns {Promise<{statusCode: number, message: string, data: object|null}>} Objeto con el resultado de la búsqueda, mensaje y datos de la cuenta encontrada o null si no existe.
+ */
 exports.getById = async (id) => {
     try {
         const bankAccountId = Number(id);
-        if (isNaN(bankAccountId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: null };
+        if (isNaN(bankAccountId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
 
         const bankAccount = await odooService.query('res.partner.bank', 'search_read', { domain: [['id', '=', bankAccountId]], fields: ['id', 'acc_number', 'bank_name', 'partner_id', 'bank_id'] });
 
-        if (bankAccount.error) return { statusCode: 500, message: bankAccount.message, data: bankAccount };
+        if (bankAccount.error) return { statusCode: bankAccount.status, message: bankAccount.message, data: bankAccount.data };
         if (!bankAccount.success) return { statusCode: 400, message: bankAccount.message, data: bankAccount.data?.data?.message };
         if (!bankAccount.data || bankAccount.data.length === 0) return { statusCode: 404, message: `No se encontró ningún bankAccount con id ${bankAccountId}`, data: [] };
         return { statusCode: 200, message: 'BankAccount obtenido con éxito', data: bankAccount.data[0] };
@@ -18,6 +23,11 @@ exports.getById = async (id) => {
     }
 };
 
+/**
+ * Obtiene una lista de cuentas bancarias filtradas según los parámetros dados. Realiza una búsqueda en el modelo 'res.partner.bank' usando los filtros proporcionados (por número, banco, etc). Devuelve todas las cuentas que coincidan con los criterios.
+ * @param {Object} filters - Filtros de búsqueda (por ejemplo, { acc_number: '123' }).
+ * @returns {Promise<{statusCode: number, message: string, data: object[]}>} Objeto con el resultado de la búsqueda, mensaje y arreglo de cuentas encontradas.
+ */
 exports.getByFilters = async (filters) => {
     try {
         fetch_filters = [];
@@ -30,7 +40,7 @@ exports.getByFilters = async (filters) => {
         }
 
         const response = await odooService.query('res.partner.bank', 'search_read', { domain: fetch_filters, fields: ['id', 'acc_number', 'bank_name', 'partner_id'] });
-        if (response.error) return { statusCode: 500, message: response.message, data: response };
+        if (response.error) return { statusCode: response.status, message: response.message, data: response.data };
         if (!response.success) return { statusCode: 400, message: response.message, data: response.data?.data?.message };
         return { statusCode: 200, message: 'BankAccounts obtenidos con éxito', data: response.data };
     } catch (e) {
@@ -39,6 +49,11 @@ exports.getByFilters = async (filters) => {
     }
 };
 
+/**
+ * Crea una nueva cuenta bancaria en Odoo. Inserta un nuevo registro en el modelo 'res.partner.bank' con los datos proporcionados en bankAccountInfo. Si el banco no existe, lo crea automáticamente. Verifica que no exista una cuenta duplicada para el mismo partner y banco.
+ * @param {Object} bankAccountInfo - Información de la cuenta bancaria a crear (por ejemplo: { acc_number, partner_id, bank_id }).
+ * @returns {Promise<{statusCode: number, message: string, data: object|null}>} Objeto con el resultado de la operación, mensaje y datos de la cuenta creada.
+ */
 exports.create = async (bankAccountInfo) => {
     try {
        
@@ -52,7 +67,7 @@ exports.create = async (bankAccountInfo) => {
 
             //Verificar que el bank_id es válido
             const id = Number(bankAccountInfo.bank_id);
-            if (isNaN(id)) return { statusCode: 400, message: `El id '${bankAccountInfo.bank_id}' no es válido. Debe ser un número.`, data: null };
+            if (isNaN(id)) return { statusCode: 400, message: `El id '${bankAccountInfo.bank_id}' no es válido. Debe ser un número.`, data: [] };
             bank_account_data.bank_id = id;
 
             //Verificar que el bank_id existe
@@ -73,14 +88,14 @@ exports.create = async (bankAccountInfo) => {
 
         //verificar que no existe una cuenta bancaria con el mismo número para el mismo partner
         const existing_bank_account = await odooService.query('res.partner.bank', 'search_read', { domain: [['acc_number', '=', bank_account_data.acc_number], ['bank_id', '=', bank_account_data.bank_id]], fields: ['id'] });
-        if (existing_bank_account.error) return { statusCode: 500, message: existing_bank_account.message, data: existing_bank_account };
+        if (existing_bank_account.error) return { statusCode: existing_bank_account.status, message: existing_bank_account.message, data: existing_bank_account.data };
         if (!existing_bank_account.success) return { statusCode: 400, message: existing_bank_account.message, data: existing_bank_account.data?.data?.message };
         if (existing_bank_account.data && existing_bank_account.data.length > 0) return { statusCode: 400, message: `Ya existe una cuenta bancaria con el número '${bank_account_data.acc_number}' para el partner con id '${bank_account_data.partner_id}'`, data: [] };
 
         //Crear la cuenta bancaria
         const response = await odooService.query("res.partner.bank", "create", {vals_list: [bank_account_data]});
-        if (response.success === false && response.error === true) return { statusCode: 500, message: "Error interno.", data: [response.data.message] };
-        if (response.success === false) return { statusCode: 400, message: "Error creando la cuenta bancaria.", data: [response.data.data.message] };
+        if (response.error) return { statusCode: response.status, message: response.message, data: response.data };
+        if (!response.success) return { statusCode: 400, message: "Error creando la cuenta bancaria.", data: [response.data.data.message] };
         const bankAccount = await this.getById(response.data)
 
         //Regresar la cuenta bancaria creada
@@ -95,7 +110,7 @@ exports.delete = async (id) => {
     try {
         //Validar que el id sea un número
         const bankAccountId = Number(id);
-        if (isNaN(bankAccountId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: null };
+        if (isNaN(bankAccountId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
         
         //Validar que la cuenta bancaria exista
         const bankAccountExists = await this.getById(bankAccountId);
@@ -103,7 +118,7 @@ exports.delete = async (id) => {
 
         //Eliminar la cuenta bancaria
         const response = await odooService.query("res.partner.bank", "unlink", { ids: [bankAccountId] });
-        if (response.error) return { statusCode: 500, message: response.message, data: response };
+        if (response.error) return { statusCode: response.status, message: response.message, data: response.data };
         if (!response.success) return { statusCode: 400, message: response.message, data: response.data?.data?.message };
 
         //Regresar la cuenta bancaria eliminada
