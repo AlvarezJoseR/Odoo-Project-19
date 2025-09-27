@@ -1,6 +1,7 @@
 const e = require('express');
 const odooService = require('../Odoo/odoo.connection');
 
+const fields = ['id', 'name', 'move_type', 'partner_id', 'invoice_date', 'amount_total', 'invoice_payment_term_id', 'currency_id', 'line_ids', 'company_id', 'amount_residual', 'invoice_payments_widget'];
 /**
  * Obtiene una factura por su ID.
  * @param {number|string} id - ID de la factura a buscar.
@@ -16,11 +17,17 @@ exports.getById = async (id) => {
         const invoiceId = Number(id);
         if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
 
-        const invoice = await odooService.query('account.move', 'search_read', { domain: [['id', '=', invoiceId]], fields: ['id', 'name', 'move_type', 'partner_id', 'amount_total', 'line_ids', 'currency_id', 'company_id', 'amount_residual'] });
+        const invoice = await odooService.query('account.move', 'search_read', { domain: [['id', '=', invoiceId]], fields });
 
         if (invoice.error) return { statusCode: invoice.status, message: invoice.message, data: invoice.data };
         if (!invoice.success) return { statusCode: 400, message: invoice.message, data: invoice.data?.data?.message };
         if (!invoice.data || invoice.data.length === 0) return { statusCode: 404, message: `No se encontró ningún invoice con id ${invoiceId}`, data: [] };
+        
+        if(invoice.data[0].line_ids && invoice.data[0].line_ids.length > 0){
+            const lineIds = invoice.data[0].line_ids;
+            const lines = await odooService.query('account.move.line', 'search_read', { domain: [['id', 'in', lineIds]], fields: ['id', 'product_id', 'quantity', 'price_unit', 'price_subtotal'] });
+            invoice.data[0].line_items = lines.data;
+        }
         return { statusCode: 200, message: 'Invoice obtenido con éxito', data: invoice.data[0] };
     } catch (e) {
         console.error(e);
@@ -28,11 +35,7 @@ exports.getById = async (id) => {
     }
 };
 
-/**
- * Crea una nueva factura en Odoo.
- * @param {Object} invoiceInfo - Información de la factura a crear.
- * @returns {Promise<{statusCode: number, message: string, data: any}>}
- */
+
 /**
  * Crea una nueva factura en Odoo. Inserta un nuevo registro en el modelo 'account.move' con los datos proporcionados en invoiceInfo. Si se proveen productos, los agrega a la factura. Tras la creación, retorna la factura recién creada consultando por su ID.
  * @param {Object} invoiceInfo - Información de la factura a crear (por ejemplo: { partner_id, amount_total, products }).
@@ -73,12 +76,6 @@ exports.create = async (invoiceInfo) => {
 };
 
 /**
- * Agrega productos a una factura existente.
- * @param {number|string} id - ID de la factura.
- * @param {Array<Object>} products - Productos a agregar.
- * @returns {Promise<{statusCode: number, message: string, data: any}>}
- */
-/**
  * Agrega productos a una factura existente en Odoo. Inserta nuevos registros en 'account.move.line' asociados a la factura indicada por ID.
  * @param {number|string} id - ID de la factura.
  * @param {Array<Object>} products - Productos a agregar.
@@ -110,12 +107,7 @@ exports.addProduct = async (id, products) => {
     }
 };
 
-/**
- * Elimina productos de una factura existente.
- * @param {number|string} id - ID de la factura.
- * @param {Array<Object>} products - Productos a eliminar.
- * @returns {Promise<{statusCode: number, message: string, data: any}>}
- */
+
 /**
  * Elimina productos de una factura existente en Odoo. Elimina registros en 'account.move.line' asociados a la factura indicada por ID.
  * @param {number|string} id - ID de la factura.
@@ -250,7 +242,6 @@ exports.payInvoice = async (id, data) => {
     }
 };
 
-
 exports.createCreditNote = async (id, creditNoteInfo) => {
     try {
         // Validar el id
@@ -316,7 +307,7 @@ exports.createDebitNote = async (id, debitNoteInfo) => {
         return { statusCode: 200, message: 'Nota de débito creada con éxito', data: debitNoteResponse.data };
 
     } catch (error) {
-        console.log('Error en billService.createDebitNote:', error);
+        console.e('Error en billService.createDebitNote:', error);
         return { statusCode: 500, message: 'Error al crear nota de débito', error: error.message };
     }
 };
