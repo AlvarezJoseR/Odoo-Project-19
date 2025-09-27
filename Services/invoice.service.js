@@ -301,7 +301,7 @@ exports.createDebitNote = async (id, debitNoteInfo) => {
         const wizardResponse = await odooService.query('account.debit.note', 'create', {
             vals_list: [wizardData]
         });
-        if (wizardResponse.error) return { statusCode: 500, message: 'Error al crear el wizard de nota de débito', error: wizardResponse.message };
+        if (wizardResponse.error) return { statusCode: 500, message: 'Error al crear el wizard de nota de débito', error: wizardResponse.data };
         if (!wizardResponse.success) return { statusCode: 400, message: wizardResponse.message, data: wizardResponse.data?.data?.message };
         
 
@@ -309,7 +309,7 @@ exports.createDebitNote = async (id, debitNoteInfo) => {
         const debitNoteResponse = await odooService.query('account.debit.note', 'create_debit', {
             ids: wizardResponse.data
         });
-        if (debitNoteResponse.error) return { statusCode: 500, message: 'Error al crear nota de débito', error: debitNoteResponse.message };
+        if (debitNoteResponse.error) return { statusCode: 500, message: 'Error al crear nota de débito', error: debitNoteResponse.data };
         if (!debitNoteResponse.success) return { statusCode: 400, message: debitNoteResponse.message, data: debitNoteResponse.data?.data?.message };
 
 
