@@ -280,3 +280,44 @@ exports.createCreditNote = async (id, creditNoteInfo) => {
     }
 };
 
+exports.createDebitNote = async (id, debitNoteInfo) => {
+    try {
+        // Validar el id
+        const invoiceId = Number(id);
+        if (isNaN(invoiceId)) return { statusCode: 400, message: `El id '${id}' no es válido. Debe ser un número.`, data: [] };
+        
+        // Verificar que la factura exista
+        const invoice = await this.getById(invoiceId);
+        if (invoice.statusCode !== 200) return invoice;
+
+        // Crear el wizard de nota de débito
+        const wizardData = {
+            move_ids: [[6, 0, [Number(id)]]],
+            reason: debitNoteInfo.reason || 'Nota de débito',
+            date: debitNoteInfo.date || new Date().toISOString().split('T')[0],
+            journal_id: debitNoteInfo.journal_id || false
+        };
+
+        const wizardResponse = await odooService.query('account.debit.note', 'create', {
+            vals_list: [wizardData]
+        });
+        if (wizardResponse.error) return { statusCode: 500, message: 'Error al crear el wizard de nota de débito', error: wizardResponse.message };
+        if (!wizardResponse.success) return { statusCode: 400, message: wizardResponse.message, data: wizardResponse.data?.data?.message };
+        
+
+        // Ejecutar la creación de la nota de débito
+        const debitNoteResponse = await odooService.query('account.debit.note', 'create_debit', {
+            ids: wizardResponse.data
+        });
+        if (debitNoteResponse.error) return { statusCode: 500, message: 'Error al crear nota de débito', error: debitNoteResponse.message };
+        if (!debitNoteResponse.success) return { statusCode: 400, message: debitNoteResponse.message, data: debitNoteResponse.data?.data?.message };
+
+
+        return { statusCode: 200, message: 'Nota de débito creada con éxito', data: debitNoteResponse.data };
+
+    } catch (error) {
+        console.log('Error en billService.createDebitNote:', error);
+        return { statusCode: 500, message: 'Error al crear nota de débito', error: error.message };
+    }
+};
+
